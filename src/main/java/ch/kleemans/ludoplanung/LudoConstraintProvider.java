@@ -17,7 +17,7 @@ import static ai.timefold.solver.core.api.score.stream.Joiners.lessThan;
 
 public class LudoConstraintProvider implements ConstraintProvider {
 
-    public static float PLANNING_MONTHS = 2;
+    public static float PLANNING_MONTHS = 5;
 
     @Override
     public Constraint[] defineConstraints(@NonNull ConstraintFactory constraintFactory) {
