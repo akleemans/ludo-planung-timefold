@@ -11,7 +11,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+
+import static ch.kleemans.ludoplanung.LudoConstraintProvider.PLANNING_MONTHS;
 
 @PlanningSolution
 @NoArgsConstructor
@@ -38,9 +42,20 @@ public class LudoSchedule {
 
     @Override
     public String toString() {
-        var s = "";
+        var s = "Shifts\n===================\n";
         for (Shift shift : shifts) {
             s += shift.toString() + "\n";
+        }
+
+        s += "\nPeople\n===================\n";
+        for (Person person : people) {
+            List<LocalDate> shiftList = new ArrayList<>();
+            for (Shift shift : shifts) {
+                if (shift.getPersonA() != null && shift.getPersonA().equals(person) || shift.getPersonB() != null && shift.getPersonB().equals(person)) {
+                    shiftList.add(shift.getDate());
+                }
+            }
+            s += person.getName() + ": " + shiftList + ", shifts: " +shiftList.size() + "/" + person.getIdealLoad() * PLANNING_MONTHS + "\n";
         }
         return s;
     }

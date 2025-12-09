@@ -6,12 +6,14 @@ import ai.timefold.solver.core.config.solver.SolverConfig;
 import ch.kleemans.ludoplanung.domain.LudoSchedule;
 import ch.kleemans.ludoplanung.domain.Person;
 import ch.kleemans.ludoplanung.domain.Shift;
+import ch.kleemans.ludoplanung.domain.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -72,11 +74,21 @@ public class LudoApp {
         }
 
         List<Person> people = new ArrayList<>();
+        var nameCol = 1;
+        var idealLoadCol = 2;
+        var unwantedCol = 3;
+        var datesCol = 4;
         for (String line : fileToLines("form_answers.csv")) {
             var attributes = line.split(",");
-            var name = attributes[1].replace("\"", "");
-            float idealLoad = Float.parseFloat(attributes[3]);
-            var dateStrings = attributes[2].replace("\"", "").split(";");
+            var name = attributes[nameCol].replace("\"", "");
+            float idealLoad = Float.parseFloat(attributes[idealLoadCol]);
+            String unwantedDaysStr = attributes[unwantedCol];
+            Set<DayOfWeek> unwantedDays = Set.of();
+            if (!unwantedDaysStr.isEmpty()) {
+                unwantedDays = Arrays.stream(unwantedDaysStr.split(";")).map(Util::getDayOfWeek).collect(Collectors.toSet());
+            }
+
+            var dateStrings = attributes[datesCol].replace("\"", "").split(";");
             Set<LocalDate> dates = new HashSet<>();
             for (var dateString : dateStrings) {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy");
@@ -84,7 +96,7 @@ public class LudoApp {
                 dates.add(date);
             }
             System.out.println(name + " has available dates: " + dates);
-            people.add(new Person(name, idealLoad, dates));
+            people.add(Person.builder().name(name).idealLoad(idealLoad).availableDates(dates).unwantedDaysOfWeek(unwantedDays).build());
         }
 
         // Validation

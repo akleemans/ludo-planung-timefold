@@ -1,25 +1,30 @@
 package ch.kleemans.ludoplanung.domain;
 
 import ai.timefold.solver.core.api.domain.lookup.PlanningId;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Set;
 
 @Setter
 @Getter
-@AllArgsConstructor
+@Builder
 public class Person {
     @PlanningId
     private String name;
     private float idealLoad;
     private Set<LocalDate> availableDates;
+    @Builder.Default
+    private Set<DayOfWeek> unwantedDaysOfWeek = Set.of();
 
     public boolean isAvailable(LocalDate date) {
         return availableDates.contains(date);
+    }
+
+    public boolean isUnwantedDate(LocalDate date) {
+        return unwantedDaysOfWeek.contains(Util.getDayOfWeek(date));
     }
 
     @Override

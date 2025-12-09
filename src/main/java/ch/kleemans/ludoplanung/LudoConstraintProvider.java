@@ -17,21 +17,24 @@ import static ai.timefold.solver.core.api.score.stream.Joiners.lessThan;
 
 public class LudoConstraintProvider implements ConstraintProvider {
 
-    private static final BigDecimal PLANNING_MONTHS = BigDecimal.valueOf(5L);
+    public static float PLANNING_MONTHS = 2;
 
     @Override
     public Constraint[] defineConstraints(@NonNull ConstraintFactory constraintFactory) {
         return new Constraint[]{
                 // Hard constraints
+                personOnlyWhenAvailable(constraintFactory),
+                // Implicit hard constraints
                 noSamePersonTwiceInShift(constraintFactory),
                 noPersonTwiceInSameWeek(constraintFactory),
-                personOnlyWhenAvailable(constraintFactory),
+                eachPersonPlannedAtLeastOnce(constraintFactory),
 
-                // Soft constraints
-                // Each person is near their ideal shift count
+                // Soft constraints - strong
                 idealMonthlyLoad(constraintFactory),
-                // Balance shifts (more distance between shifts better)
+
+                // Soft constraints - weak
                 wellDistributedShifts(constraintFactory),
+                avoidUnwantedDates(constraintFactory),
         };
     }
 
@@ -72,6 +75,29 @@ public class LudoConstraintProvider implements ConstraintProvider {
                 .asConstraint("Person must be available on shift date");
     }
 
+    Constraint eachPersonPlannedAtLeastOnce(ConstraintFactory factory) {
+        return factory.forEach(Person.class)
+                .ifNotExists(Shift.class,
+                        Joiners.filtering((person, shift) ->
+                                Objects.equals(person, shift.getPersonA())
+                                        || Objects.equals(person, shift.getPersonB())
+                        )
+                )
+                .penalize(HardSoftBigDecimalScore.ONE_HARD)
+                .asConstraint("Each person must have at least one shift");
+    }
+
+
+    Constraint avoidUnwantedDates(ConstraintFactory constraintFactory) {
+        return constraintFactory.forEach(Shift.class)
+                .filter(shift ->
+                        shift.getPersonA().isUnwantedDate(shift.getDate())
+                                || shift.getPersonB().isUnwantedDate(shift.getDate())
+                )
+                .penalize(HardSoftBigDecimalScore.ofSoft(BigDecimal.valueOf(0.2)))
+                .asConstraint("Person should not work on unwanted day of week if possible");
+    }
+
     Constraint idealMonthlyLoad(ConstraintFactory factory) {
         return factory.forEach(Person.class)
                 .join(Shift.class,
@@ -91,11 +117,12 @@ public class LudoConstraintProvider implements ConstraintProvider {
                             // ideal = idealLoad (per month) * 5 months
                             BigDecimal ideal = BigDecimal
                                     .valueOf(person.getIdealLoad())
-                                    .multiply(PLANNING_MONTHS);
+                                    .multiply(BigDecimal.valueOf(PLANNING_MONTHS));
 
                             BigDecimal actual = BigDecimal.valueOf(shiftCount);
-                            // penalty = |actual - ideal|
-                            return actual.subtract(ideal).abs();
+                            BigDecimal delta = actual.subtract(ideal).abs(); // |actual - ideal|
+                            // square the deviation: delta²
+                            return delta.pow(2);
                         }
                 )
                 .asConstraint("Ideal monthly load per person");

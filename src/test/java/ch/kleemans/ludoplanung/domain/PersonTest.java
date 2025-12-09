@@ -11,7 +11,7 @@ class PersonTest {
     private final LocalDate availableDate = LocalDate.of(2026, 2, 10);
     private final LocalDate unavailableDate = LocalDate.of(2026, 2, 13);
 
-    private final Person alice = new Person("Alice", 1.5f, Set.of(availableDate));
+    private final Person alice = Person.builder().name("Alice").idealLoad(1.5f).availableDates(Set.of(availableDate)).build();
 
     @Test
     void getIdealLoad() {
