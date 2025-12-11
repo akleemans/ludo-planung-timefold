@@ -25,3 +25,6 @@ replay_pid*
 
 .gradle/
 build/
+
+# Exclude Ludo data
+/src/main/resources/2026-1
