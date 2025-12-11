@@ -6,6 +6,8 @@ import ch.kleemans.ludoplanung.domain.Person;
 import ch.kleemans.ludoplanung.domain.Shift;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
@@ -151,4 +153,50 @@ class LudoConstraintProviderTest {
                 .given(Stream.concat(Stream.of(alice, bob), shifts.stream()).toArray())
                 .penalizesBy(2); // |6 - 5| * 2 = 2
     }
+
+    @Test
+    void wellDistributedShifts_twoShiftsTooClose_penalizesByThree() {
+        // Person with idealLoad = 1 shift / month
+        Person alice = Person.builder().name("Alice").idealLoad(1.0f).build();
+        Person bob = Person.builder().name("Bob").idealLoad(1.0f).build();
+
+        Shift s1 = new Shift("01.01.26", alice, bob);
+        Shift s2 = new Shift("08.01.26", alice, bob);
+
+        constraintVerifier.verifyThat(LudoConstraintProvider::wellDistributedShifts)
+                .given(alice, s1, s2)
+                // 21 days deviation total -> 3 weeks
+                .penalizesBy(BigDecimal.valueOf(3));
+    }
+
+    @Test
+    void wellDistributedShifts_twoShiftsPerfectlySpaced_noPenalty() {
+        Person alice = Person.builder().name("Alice").idealLoad(1.0f).build();
+        Person bob = Person.builder().name("Bob").idealLoad(1.0f).build();
+
+        Shift s1 = new Shift("01.01.26", alice, bob);
+        Shift s2 = new Shift("29.01.26", alice, bob);
+
+        constraintVerifier.verifyThat(LudoConstraintProvider::wellDistributedShifts)
+                .given(alice, s1, s2)
+                .penalizesBy(BigDecimal.ZERO);
+    }
+
+    @Test
+    void wellDistributedShifts_idealLoadTwo_almostTwoWeekGaps_smallPenalty() {
+        Person alice = Person.builder().name("Alice").idealLoad(2.0f).build();
+        Person bob = Person.builder().name("Bob").idealLoad(1.0f).build();
+
+        Shift s1 = new Shift("01.01.26", alice, bob);
+        Shift s2 = new Shift("14.01.26", alice, bob);
+        Shift s3 = new Shift("29.01.26", alice, bob);
+
+        // total deviation days = |13-14| + |15-14| = 2 -> 2/7 ≈ 0.29
+        // You can either assert exact value (if you round in helper),
+        // or just check it's between 0 and 1:
+        constraintVerifier.verifyThat(LudoConstraintProvider::wellDistributedShifts)
+                .given(alice, s1, s2, s3)
+                .penalizesBy(BigDecimal.valueOf(0.2857).setScale(2, RoundingMode.HALF_UP));
+    }
+
 }

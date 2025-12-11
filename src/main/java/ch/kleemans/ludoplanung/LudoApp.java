@@ -2,6 +2,7 @@ package ch.kleemans.ludoplanung;
 
 import ai.timefold.solver.core.api.solver.Solver;
 import ai.timefold.solver.core.api.solver.SolverFactory;
+import ai.timefold.solver.core.api.solver.event.BestSolutionChangedEvent;
 import ai.timefold.solver.core.config.solver.SolverConfig;
 import ch.kleemans.ludoplanung.domain.LudoSchedule;
 import ch.kleemans.ludoplanung.domain.Person;
@@ -23,13 +24,16 @@ import java.util.stream.Collectors;
 public class LudoApp {
     private static final Logger LOGGER = LoggerFactory.getLogger(LudoApp.class);
 
+    private static final String SEASON = "2026-1";
+    private static final Duration TIME_LIMIT = Duration.ofMinutes(5);
+
     public static void main(String[] args) {
         SolverFactory<LudoSchedule> solverFactory = SolverFactory.create(new SolverConfig()
                 .withSolutionClass(LudoSchedule.class)
                 .withEntityClasses(Shift.class)
                 .withConstraintProviderClass(LudoConstraintProvider.class)
                 // It's recommended to run for at least 5 minutes
-                .withTerminationSpentLimit(Duration.ofSeconds(5)));
+                .withTerminationSpentLimit(TIME_LIMIT));
 
         // Load the problem
         LudoSchedule problem = loadData();
@@ -49,6 +53,13 @@ public class LudoApp {
 
         // Solve the problem
         Solver<LudoSchedule> solver = solverFactory.buildSolver();
+        solver.addEventListener((BestSolutionChangedEvent<LudoSchedule> event) -> {
+            // This is called every time a new best solution is found
+            var score = event.getNewBestScore();
+            LOGGER.info("New best score: {}, {}", score, event.getNewBestSolution());
+        });
+
+
         LudoSchedule solution = solver.solve(problem);
 
         System.out.println(solution);
@@ -69,7 +80,7 @@ public class LudoApp {
     public static LudoSchedule loadData() {
         // Load Shifts
         List<Shift> shifts = new ArrayList<>();
-        for (String line : fileToLines("daten_ludo.txt")) {
+        for (String line : fileToLines(SEASON + "/dates.txt")) {
             shifts.add(new Shift(line.split("\t")[0]));
         }
 
@@ -78,7 +89,7 @@ public class LudoApp {
         var idealLoadCol = 2;
         var unwantedCol = 3;
         var datesCol = 4;
-        for (String line : fileToLines("form_answers.csv")) {
+        for (String line : fileToLines(SEASON + "/form_answers.csv")) {
             var attributes = line.split(",");
             var name = attributes[nameCol].replace("\"", "");
             float idealLoad = Float.parseFloat(attributes[idealLoadCol]);

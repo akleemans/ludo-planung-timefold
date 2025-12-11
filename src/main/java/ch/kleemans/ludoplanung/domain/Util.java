@@ -1,10 +1,12 @@
 package ch.kleemans.ludoplanung.domain;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.WeekFields;
 
 public class Util {
+    private static final BigDecimal DAYS_PER_MONTH_APPROX = BigDecimal.valueOf(28);
 
     public static int getWeekNumber(LocalDate date) {
         return date.get(WeekFields.ISO.weekOfWeekBasedYear());
@@ -30,5 +32,9 @@ public class Util {
         } else {
             return DayOfWeek.SUNDAY;
         }
+    }
+
+    public static double getExpectedGapDays(Person person) {
+        return Math.round(DAYS_PER_MONTH_APPROX.doubleValue() / person.getIdealLoad() * 100) / 100.0;
     }
 }

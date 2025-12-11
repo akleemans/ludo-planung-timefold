@@ -4,10 +4,11 @@ import ai.timefold.solver.core.api.score.buildin.hardsoftbigdecimal.HardSoftBigD
 import ai.timefold.solver.core.api.score.stream.*;
 import ch.kleemans.ludoplanung.domain.Person;
 import ch.kleemans.ludoplanung.domain.Shift;
+import ch.kleemans.ludoplanung.domain.Util;
 import org.jspecify.annotations.NonNull;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.math.RoundingMode;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
@@ -141,56 +142,46 @@ public class LudoConstraintProvider implements ConstraintProvider {
                         ConstraintCollectors.toList((person, shift) -> shift)
                 )
                 .penalizeBigDecimal(
-                        HardSoftBigDecimalScore.ofSoft(new BigDecimal("0.2")),
-                        (person, shifts) -> calculateDistributionPenalty(shifts)
+                        HardSoftBigDecimalScore.ofSoft(new BigDecimal("0.3")),
+                        this::calculateDistributionPenalty
                 )
-                .asConstraint("Well distributed shifts per person");
+                .asConstraint("Shifts should be well distributed according to ideal load");
     }
 
-    private BigDecimal calculateDistributionPenalty(List<Shift> shifts) {
+    private BigDecimal calculateDistributionPenalty(Person person, List<Shift> shifts) {
         int n = shifts.size();
         if (n <= 1) {
-            // With 0 or 1 shift, “distribution” doesn’t really apply.
             return BigDecimal.ZERO;
         }
 
-        // Sort dates
-        List<LocalDate> dates = shifts.stream()
-                .map(Shift::getDate)
-                .sorted(Comparator.naturalOrder())
+        // Expected gap between this person's shifts, in days.
+        // Example: idealLoad=1.0 => 28 days; idealLoad=2.0 => 14 days.
+        double expectedGapDays = Util.getExpectedGapDays(person);
+
+        // Sort shifts by date
+        List<Shift> sorted = shifts.stream()
+                .sorted(Comparator.comparing(Shift::getDate))
                 .toList();
 
-        int gaps = dates.size() - 1;
-        if (gaps == 0) {
-            // All shifts on exactly the same date -> worst possible distribution.
-            // Penalize strongly: one unit per “extra” shift.
-            return BigDecimal.valueOf(n - 1L);
+        double totalDeviationDays = 0.0;
+        double minThreshold = 5; // Only punish if above 5 days
+        double punishFactor = 1.25f; // Punish outliers harder
+
+        for (int i = 1; i < sorted.size(); i++) {
+            long gapDays = ChronoUnit.DAYS.between(
+                    sorted.get(i - 1).getDate(),
+                    sorted.get(i).getDate()
+            );
+            var currentDeviation = Math.max(Math.abs(gapDays - expectedGapDays) - minThreshold, 0);
+
+            totalDeviationDays += Math.pow(currentDeviation, punishFactor);
         }
 
-        long[] gapDays = new long[gaps];
-        long totalGapDays = 0L;
-        for (int i = 1; i < dates.size(); i++) {
-            long days = ChronoUnit.DAYS.between(dates.get(i - 1), dates.get(i));
-            gapDays[i - 1] = days;
-            totalGapDays += days;
-        }
+        // Convert to weeks to keep numbers reasonable
+        BigDecimal totalDeviationWeeks = BigDecimal
+                .valueOf(totalDeviationDays)
+                .divide(BigDecimal.valueOf(7), 2, RoundingMode.HALF_UP);
 
-        if (totalGapDays == 0L) {
-            // All shifts on the same day (defensive double-check).
-            return BigDecimal.valueOf(gaps);
-        }
-
-        double averageGap = (double) totalGapDays / gaps;
-
-        double deviationSum = 0.0;
-        for (long gap : gapDays) {
-            deviationSum += Math.abs(gap - averageGap);
-        }
-
-        // Work in weeks to keep numbers reasonable.
-        double deviationInWeeks = deviationSum / 7.0;
-
-        return BigDecimal.valueOf(deviationInWeeks);
+        return totalDeviationWeeks;
     }
-
 }
