@@ -164,17 +164,19 @@ public class LudoConstraintProvider implements ConstraintProvider {
                 .toList();
 
         double totalDeviationDays = 0.0;
-        double minThreshold = 5; // Only punish if above 5 days
-        double punishFactor = 1.25f; // Punish outliers harder
+        // double minThreshold = 5; // Only punish if above 5 days
+        double punishFactor = 1.5f; //1.25f; // Punish outliers harder
 
         for (int i = 1; i < sorted.size(); i++) {
             long gapDays = ChronoUnit.DAYS.between(
                     sorted.get(i - 1).getDate(),
                     sorted.get(i).getDate()
             );
-            var currentDeviation = Math.max(Math.abs(gapDays - expectedGapDays) - minThreshold, 0);
 
-            totalDeviationDays += Math.pow(currentDeviation, punishFactor);
+            var currentDeviation = expectedGapDays - gapDays;
+            if (currentDeviation > 0) {
+                totalDeviationDays += Math.pow(currentDeviation, punishFactor);
+            }
         }
 
         // Convert to weeks to keep numbers reasonable

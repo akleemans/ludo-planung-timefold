@@ -56,7 +56,8 @@ public class LudoApp {
         solver.addEventListener((BestSolutionChangedEvent<LudoSchedule> event) -> {
             // This is called every time a new best solution is found
             var score = event.getNewBestScore();
-            LOGGER.info("New best score: {}, {}", score, event.getNewBestSolution());
+            LOGGER.info("New best score: {}", score);
+            LOGGER.debug("New best solution: {}", event.getNewBestSolution());
         });
 
 

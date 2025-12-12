@@ -49,7 +49,7 @@ public class LudoSchedule {
             s += shift.toString() + "\n";
         }
 
-        s += "\nPeople\n===================\n";
+        s += "\nPeople  (for copy-paste)\n===================\n";
         for (Shift shift : shifts) {
             s += shift.getPersonA() + ", " + shift.getPersonB() + "\n";
         }
@@ -73,7 +73,9 @@ public class LudoSchedule {
                             .mapToLong(i -> ChronoUnit.DAYS.between(dateList.get(i), dateList.get(i + 1)))
                             .min()
                             .orElse(0);
-            s += person.getName() + ", shifts: " + dateList.size() + "/" + person.getIdealLoad() * PLANNING_MONTHS + ", min/max gaps: " + minGap + "/" + maxGap + " (ideal: " + Util.getExpectedGapDays(person) + ") " + ", dates: " + dateList + "\n";
+            // TODO also log amount of unwanted dates
+            s += person.getName() + ", shifts: " + dateList.size() + "/" + person.getIdealLoad() * PLANNING_MONTHS + ", min/max gaps: "
+                    + minGap + "/" + maxGap + " (ideal: " + Util.getExpectedGapDays(person) + ") " + ", dates: " + dateList + "\n";
         }
         return s;
     }

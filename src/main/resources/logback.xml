@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-  <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%-12.12t] %-5p %m%n</pattern>
-    </encoder>
-  </appender>
+    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%-12.12t] %-5p %m%n</pattern>
+        </encoder>
+    </appender>
 
-  <logger name="ai.timefold.solver" level="info"/>
+    <!-- Timefold on info, else it will log every step -->
+    <logger name="ai.timefold.solver" level="info"/>
 
-  <root level="info">
-    <appender-ref ref="consoleAppender" />
-  </root>
+    <!-- App code to debug, so the solution itself is also logged. On info, only score will be logged (the solution only at the end) -->
+    <logger name="ch.kleemans" level="debug"/>
+
+    <root level="info">
+        <appender-ref ref="consoleAppender"/>
+    </root>
 
 </configuration>
