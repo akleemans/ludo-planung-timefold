@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class LudoApp {
     private static final Logger LOGGER = LoggerFactory.getLogger(LudoApp.class);
 
-    private static final String SEASON = "2026-1";
+    private static final String SEASON = "2026-2";
     private static final Duration TIME_LIMIT = Duration.ofMinutes(5);
 
     public static void main(String[] args) {

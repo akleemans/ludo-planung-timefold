@@ -28,3 +28,4 @@ build/
 
 # Exclude Ludo data
 /src/main/resources/2026-1
+/src/main/resources/2026-2
