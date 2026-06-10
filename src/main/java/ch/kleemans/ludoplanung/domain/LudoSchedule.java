@@ -44,7 +44,13 @@ public class LudoSchedule {
 
     @Override
     public String toString() {
-        var s = "Shifts\n===================\n";
+        var s = """
+                
+                -------------------------------------------------------------------------------------
+                
+                Shifts
+                ===================
+                """;
         for (Shift shift : shifts) {
             s += shift.toString() + "\n";
         }
