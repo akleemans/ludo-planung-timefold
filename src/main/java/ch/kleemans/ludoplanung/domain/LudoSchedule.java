@@ -79,10 +79,14 @@ public class LudoSchedule {
                             .mapToLong(i -> ChronoUnit.DAYS.between(dateList.get(i), dateList.get(i + 1)))
                             .min()
                             .orElse(0);
-            // TODO also log amount of unwanted dates
-            s += person.getName() + ", shifts: " + dateList.size() + "/" + person.getIdealLoad() * PLANNING_MONTHS + ", min/max gaps: "
-                    + minGap + "/" + maxGap + " (ideal: " + Util.getExpectedGapDays(person) + ") " + ", dates: " + dateList + "\n";
+
+            var nrOfUnwantedDates = dateList.stream().filter(d -> person.getUnwantedDaysOfWeek().contains(d.getDayOfWeek())).count();
+            s += person.getName() + ", shifts: " + dateList.size() + "/" + person.getIdealLoad() * PLANNING_MONTHS +
+                    ", min/max gaps: " + minGap + "/" + maxGap + " (ideal: " + Util.getExpectedGapDays(person) + ") " +
+                    ", unwanted dates: " + nrOfUnwantedDates +
+                    ", dates: " + dateList + "\n";
         }
+        s += "\nScore: " + score + "\n";
         return s;
     }
 }

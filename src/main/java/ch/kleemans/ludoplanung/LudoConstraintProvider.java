@@ -34,8 +34,8 @@ public class LudoConstraintProvider implements ConstraintProvider {
                 idealMonthlyLoad(constraintFactory),
 
                 // Soft constraints - weak
-                wellDistributedShifts(constraintFactory),
                 avoidUnwantedDates(constraintFactory),
+                wellDistributedShifts(constraintFactory),
         };
     }
 
@@ -95,7 +95,9 @@ public class LudoConstraintProvider implements ConstraintProvider {
                         shift.getPersonA().isUnwantedDate(shift.getDate())
                                 || shift.getPersonB().isUnwantedDate(shift.getDate())
                 )
-                .penalize(HardSoftBigDecimalScore.ofSoft(BigDecimal.valueOf(0.2)))
+                // TODO already tweaked from 0.2 -> 0.5, but it could still affect only 1 person.
+                // It would be better to punish more unwanted dates on the same person stronger (see toString on LudoSchedule)
+                .penalize(HardSoftBigDecimalScore.ofSoft(BigDecimal.valueOf(0.5)))
                 .asConstraint("Person should not work on unwanted day of week if possible");
     }
 
@@ -142,7 +144,7 @@ public class LudoConstraintProvider implements ConstraintProvider {
                         ConstraintCollectors.toList((person, shift) -> shift)
                 )
                 .penalizeBigDecimal(
-                        HardSoftBigDecimalScore.ofSoft(new BigDecimal("0.3")),
+                        HardSoftBigDecimalScore.ofSoft(new BigDecimal("0.2")),
                         this::calculateDistributionPenalty
                 )
                 .asConstraint("Shifts should be well distributed according to ideal load");
